@@ -1,0 +1,48 @@
+# tema1
+
+Tema 1 APD - Dumitrescu Rares Matei, 331CA
+
+In order to use parallelism for Marching Square Algorithm
+I used pthreads from pthread.h library.
+
+Firstly, I got the number of threads that the program will
+work with from the arguments (NUM_THREADS).
+
+In order to work with threads and creating and joining them
+only one time, I created a struct called threads_struct
+which has the next fields:
+    - int thread_id (Thread id)
+    - int sigma (value used in grid creation)
+    - pthread_barrier_t *barrier (used for deviding work through threads)
+    - ppm_image *image (read image from the file in the beginning)
+    - ppm_image *scaled_image (actual image that threads will work with)
+    - ppm_image **contour_map (map between the binary
+    configuration and the corresponding pixels)
+    - unsigned char **grid (p x q grid of points where sigma is used)
+    - int NUM_THREADS (number of threads)
+
+After getting the number of threads, I created an array of NUM_THREADS number
+of threads_struct (work_data).
+I allocated memory for image, scaled_image (if needed to be rescaled),
+contour_map, grid, and barrier (also, initiating it) (BEFORE creating threads).
+
+I assigned all of this data to each struct in the array (some fields are pointers
+so that each struct points to the same data).
+
+The actual parralelism starts here: called pthread_create for each thread and
+passed as an argument start_thread function and
+work_data[i] struct. In this function thread_rescale (if needed), thread_simple_grid,
+pthread_barrier_wait, thread_march, and pthread_exit functions are called in this order.
+
+Each of those functions have a for in them and this is where threads work on
+different portions based on their thread_id in the struct.
+Example:
+    int start = thread_id * (double) p / nr_threads;
+    int end = min((thread_id + 1) * (double) p / nr_threads, p);
+    for (int i = start; i < end; i++).
+Doing this, each thread does its job in the same time and the program
+running time would be drastically reduced.
+
+Very important, barrier will wait for all threads between grid and march,
+because grid is used in march. Otherwise, marching will interfere in grid
+or vice versa if 1 ore more threads are slower than the others.
